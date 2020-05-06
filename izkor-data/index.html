@@ -5,14 +5,37 @@
     <title>נתוני נופלים מאתר יזכור</title>
     <script>
 function getData() {
-  const result = document.getElementById('result');
-  result.innerHTML = 'הנה הנתונים..  '
+  const baseUrl = 'https://www.izkor.gov.il/search';
+  const nextYear = new Date().getFullYear() + 1;
+  const initialUrl = `/date/01-01-1800/01-01-${nextYear}/0/1000/d`;
+  let list = [];
+  const ids = {};
+  const fetchData = url => {
+    return fetch(baseUrl + url).then(response => response.json()).then(data => {
+      const newData = data.data.filter(({ uuid }) => !ids[uuid]);
+      if (newData.length === 0 || window.stopFetch) return;
+      list = list.concat(newData);
+      newData.forEach(({ uuid }) => ids[uuid] = true);
+      const result = document.getElementById('result');
+      result.innerHTML = `נמצאו   ${list.length}   נופלים`
+      // console.log(data);
+      const last = list[list.length - 1];
+      return fetchData(`/date/${last.death_date}/01-01-${nextYear}/0/1000/d`);
+    });
+  }
+
+  fetchData(initialUrl).then(() => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(list));
+    result.setAttribute("href", dataStr);
+    result.setAttribute("download", "izkor-data.json");
+  })
 }
+getData();
     </script>
 </head>
 <body dir="rtl">
 <H2>נתוני נופלים מאתר יזכור</H2>
-<button onclick="getData()">הורד נתונים</button>
-<div id="result"></div>
+<br>
+<div><a id="result"></a></div>
 </body>
 </html>
